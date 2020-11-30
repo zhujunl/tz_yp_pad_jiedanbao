@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:orientation="vertical"
+    android:layout_height="match_parent"
+    android:background="@color/white"
+    tools:context=".BranchActivity">
+
+    <TextView
+        android:id="@+id/brach_head"
+        android:layout_marginTop="20dp"
+        android:layout_marginLeft="90dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:letterSpacing="0.1"
+        android:textSize="50sp"
+        android:textColor="@color/black"
+        android:text="请选择你的分店"/>
+
+        <View
+            android:layout_marginLeft="50dp"
+            android:layout_marginRight="100dp"
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="#27000000"/>
+
+
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/branch_RV"
+        android:layout_marginLeft="50dp"
+        android:layout_marginRight="100dp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"/>
+</LinearLayout>
