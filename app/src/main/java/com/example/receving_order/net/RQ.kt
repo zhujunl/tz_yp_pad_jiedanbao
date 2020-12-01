@@ -14,47 +14,42 @@ object RQ {
     /**https://www.baidu.com/
       * 订单列表
       */
-    fun getOrderList(context:Context,reserveType:String,mealHourName:String,finish:String,size:Int=100,sucess:(order_list)-> Unit){
+    fun getOrderList(context:Context,mealHourName:String,finish:String,sucess:(order_list)-> Unit){
         OKhttp.post<order_list>(APi.ORDER_LIST,{
             sucess.invoke(it)
         },"shopId" to SP.getShopId(context).toString(),
                 "branchId" to SP.getBranchId(context).toString(),
                 "mealHourName" to mealHourName,
-                "reserveType" to reserveType,
-                "size" to size.toString(),
                 "finish" to finish)
     }
     /**
      *   按会员名称/座位号/取餐号 搜索订单
      */
-    fun getOrderList(context:Context,mixParam:String,reserveType:String,mealHourName:String,finish:String,size:Int=20,sucess:(order_list)-> Unit){
+    fun getOrderList(context:Context,mixParam:String,mealHourName:String,finish:String,sucess:(order_list)-> Unit){
         OKhttp.post<order_list>(APi.ORDER_LIST,{
             sucess.invoke(it)
         },"shopId" to SP.getShopId(context).toString(),
                 "branchId" to SP.getBranchId(context).toString(),
                 "mixParam" to mixParam,
                 "mealHourName" to mealHourName,
-                "reserveType" to reserveType,
-                "size" to size.toString(),
                 "finish" to finish)
     }
 
     /**
      * 获取订单数量
      */
-    fun getorderNum(context:Context,pos:String,mealtime:String,pos2:String,sucess:(getCount)-> Unit){
+    fun getorderNum(context:Context,mealtime:String,pos2:String,sucess:(getCount)-> Unit){
         OKhttp.post<getCount>(APi.COUNT,{
             sucess.invoke(it)
         },"shopId" to SP.getShopId(context).toString(),
                 "branchId" to SP.getBranchId(context).toString(),
-                "reserveType" to pos,
                 "mealHourName" to mealtime,
                 "finish" to pos2)
     }
     /**
      * 加载新订单
      */
-    fun refrestOrderList(context:Context,mixParam:String,reserveType:String,mealHourName:String,finish:String,lastOrderNo:String,size:Int=4,sucess:(order_list)-> Unit){
+    fun refrestOrderList(context:Context,mixParam:String,mealHourName:String,finish:String,lastOrderNo:String,sucess:(order_list)-> Unit){
         OKhttp.post<order_list>(APi.ORDER_LIST,{
             sucess.invoke(it)
         },"shopId" to SP.getShopId(context).toString(),
@@ -62,8 +57,6 @@ object RQ {
                 "mixParam" to mixParam,
                 "lastOrderNo" to lastOrderNo,
                 "mealHourName" to mealHourName,
-                "reserveType" to reserveType,
-                "size" to size.toString(),
                 "finish" to finish)
     }
 

@@ -41,7 +41,6 @@ import java.util.*
 class OrderActivity : BaseActivity(){
 
     private var currentSelectIndex=0
-    private var pos:String=""
     private var pos2 :String=""
     private var item_pos=0
     private var count=0
@@ -49,7 +48,7 @@ class OrderActivity : BaseActivity(){
     private var mstyle= arrayListOf<String>("全部")
     private var order_user_list:MutableList<order_list.Data> = ArrayList()
     private var last_OrderNO= String()
-    private val mItems = arrayOf("全部", "堂食", "自提")
+//    private val mItems = arrayOf("全部", "堂食", "自提")
     private val mrovke= arrayOf("全部","未核销","已核销")
 
 
@@ -76,7 +75,7 @@ class OrderActivity : BaseActivity(){
         override fun run() {
             //do something
             //每隔1s循环执行run方法
-            auto_refresh(pos,mealtime,pos2)
+            auto_refresh(mealtime,pos2)
             mHandler.postDelayed(this, 5000)
         }
     }
@@ -84,9 +83,9 @@ class OrderActivity : BaseActivity(){
     override fun init(bundle: Bundle?) {
         mHandler.postDelayed(r, 10000);//延时100毫秒
 
-        val adapter= ArrayAdapter<String>(this, R.layout.item_order_spinner, mItems)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        order_spinner.setAdapter(adapter)
+//        val adapter= ArrayAdapter<String>(this, R.layout.item_order_spinner, mItems)
+//        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+//        order_spinner.setAdapter(adapter)
         val adapter1= ArrayAdapter<String>(this, R.layout.item_order_spinner, mrovke)
         adapter1.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         revoke_spinner.setAdapter(adapter1)
@@ -120,7 +119,7 @@ class OrderActivity : BaseActivity(){
         }
 
         search_txt.click {
-            RQ.getOrderList(this,search_edt.text.toString().trim(),pos,mealtime,pos2){
+            RQ.getOrderList(this,search_edt.text.toString().trim(),mealtime,pos2){
                 if(it.code==200){
                     if(it.data.size>0) {
                         getOrderMeal(it.data[0].orderNo)
@@ -149,29 +148,29 @@ class OrderActivity : BaseActivity(){
             }
         }
 
-        order_spinner.setOnItemSelectedListener(object : AdapterView.OnItemSelectedListener{
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-                TODO("Not yet implemented")
-            }
-
-            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                currentSelectIndex=0
-                when(position){
-                    0->{
-                        pos=""
-                    }
-                    1->{
-                        pos=position.toString()
-                    }
-                    2->{
-                        pos=position.toString()
-                    }
-                }
-                search_edt.text.clear()
-                getOrderUser(pos,mealtime,pos2)
-                order_user_list.clear()
-            }
-        })
+//        order_spinner.setOnItemSelectedListener(object : AdapterView.OnItemSelectedListener{
+//            override fun onNothingSelected(parent: AdapterView<*>?) {
+//                TODO("Not yet implemented")
+//            }
+//
+//            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+//                currentSelectIndex=0
+//                when(position){
+//                    0->{
+//                        pos=""
+//                    }
+//                    1->{
+//                        pos=position.toString()
+//                    }
+//                    2->{
+//                        pos=position.toString()
+//                    }
+//                }
+//                search_edt.text.clear()
+//                getOrderUser(pos,mealtime,pos2)
+//                order_user_list.clear()
+//            }
+//        })
 
         revoke_spinner.setOnItemSelectedListener(object : AdapterView.OnItemSelectedListener{
             override fun onNothingSelected(parent: AdapterView<*>?) {
@@ -192,7 +191,7 @@ class OrderActivity : BaseActivity(){
                     }
                 }
                 search_edt.text.clear()
-                getOrderUser(pos,mealtime,pos2)
+                getOrderUser(mealtime,pos2)
                 order_user_list.clear()
             }
         })
@@ -239,8 +238,8 @@ class OrderActivity : BaseActivity(){
     }
     var mediaPlayer: MediaPlayer? = null
 
-    fun auto_refresh(pos:String,mealtime:String,pos2:String){
-        RQ.getorderNum(this,pos,mealtime,pos2){
+    fun auto_refresh(mealtime:String,pos2:String){
+        RQ.getorderNum(this,mealtime,pos2){
             Log.d("长度==",count.toString())
             if(count<it.data){
                 count=it.data
@@ -259,7 +258,7 @@ class OrderActivity : BaseActivity(){
                     last_OrderNO=order_user_list[order_user_list.size-1].orderNo
                 }
                 Log.d("_last_OrderNO===",last_OrderNO)
-                RQ.refrestOrderList(this,search_edt.text.toString().trim(), pos, mealtime, pos2, last_OrderNO) {
+                RQ.refrestOrderList(this,search_edt.text.toString().trim(),mealtime, pos2, last_OrderNO) {
                     Log.d("search_edt.text.toString().trim()==",search_edt.text.toString().trim())
                     it.data.forEach { order_user_list.add(it) }
                     orderlist_RV(order_user_list)
@@ -302,7 +301,7 @@ class OrderActivity : BaseActivity(){
                             }else{
                                 mealtime=""
                             }
-                            getOrderUser(pos,mealtime,pos2)
+                            getOrderUser(mealtime,pos2)
                             search_edt.text.clear()
                             order_user_list.clear()
                         }
@@ -320,10 +319,10 @@ class OrderActivity : BaseActivity(){
     /**
      * 获得订单用户信息
      */
-    fun getOrderUser(pos:String,mealtime:String,pos2:String){
-        System.out.println("pos=="+pos+"meal=="+mealtime+"pos2=="+pos2)
+    fun getOrderUser(mealtime:String,pos2:String){
+        System.out.println("meal=="+mealtime+"pos2=="+pos2)
         var user:MutableList<order_list.Data> = ArrayList()
-        RQ.getOrderList(this,pos,mealtime,pos2){
+        RQ.getOrderList(this,mealtime,pos2){
             if(it.code==200){
                 Log.d("it.data====",it.data.toString())
                 it.data.forEach {
@@ -348,7 +347,7 @@ class OrderActivity : BaseActivity(){
                     last_OrderNO=user[user.size-1].orderNo
                     order_user_list=user
                 }
-                RQ.getorderNum(this,pos,mealtime,pos2){
+                RQ.getorderNum(this,mealtime,pos2){
                     count=it.data
                     Log.d("获得订单用户信息count===",count.toString())
                     orderlist_RV(user)
@@ -388,15 +387,9 @@ class OrderActivity : BaseActivity(){
                     }
                     h.tv(R.id.item_order_user).text=user[p].customerName
                     h.tv(R.id.item_order_time).text=switchCreateTime(user[p].createTime)
-                    if(user[p].reserveType==1){
-                        h.tv(R.id.item_order_user_num_txt).text="座位号:"
-                        h.tv(R.id.item_order_user_num).text=user[p].seatNumber
-                        h.tv(R.id.item_order_type_btn).text="堂食"
-                    }else{
-                        h.tv(R.id.item_order_user_num_txt).text="取餐号:"
-                        h.tv(R.id.item_order_user_num).text=user[p].mealTakingNum
-                        h.tv(R.id.item_order_type_btn).text="自提"
-                    }
+                    h.tv(R.id.item_order_user_num_txt).text="座位号:"
+                    h.tv(R.id.item_order_user_num).text=user[p].seatNumber
+//                    h.tv(R.id.item_order_type_btn).text="堂食"
                     if(user[p].status==10||user[p].status==11){
                         h.tv(R.id.item_order_cancle).tag=1
                         h.tv(R.id.item_order_cancle).text="已核销"
@@ -444,30 +437,33 @@ class OrderActivity : BaseActivity(){
         RQ.getOrderDetail(this,orderNo){
             Log.d("it.data<<<<<",it.data.toString())
             if(it.code==200){
-                if(it.data.mealType==2){
-                    Log.d("取餐号===",it.data.mealTakingNum)
-                    meal_num_txt.text="取餐号："
-                    meal_num.text=it.data.mealTakingNum
-                    packLin.visibility=View.VISIBLE
-                    order_pack.text="￥"+fenToYuan(it.data.packFee.toString())
-                }else if (it.data.mealType==1){
-                    Log.d("座位号===",it.data.seatNumber)
-                    meal_num_txt.text="座位号："
-                    meal_num.text=it.data.seatNumber
-                    packLin.visibility=View.GONE
-                }
+//                if(it.data.mealType==2){
+//                    Log.d("取餐号===",it.data.mealTakingNum)
+//                    meal_num_txt.text="取餐号："
+//                    meal_num.text=it.data.mealTakingNum
+//                    packLin.visibility=View.VISIBLE
+//                    order_pack.text="￥"+fenToYuan(it.data.packFee.toString())
+//                }else if (it.data.mealType==1){
+//                    Log.d("座位号===",it.data.seatNumber)
+//                    meal_num_txt.text="座位号："
+//                    meal_num.text=it.data.seatNumber
+//                    packLin.visibility=View.GONE
+//                }
+                Log.d("座位号===",it.data.seatNumber)
+                meal_num_txt.text="座位号："
+                meal_num.text=it.data.seatNumber
+                packLin.visibility=View.GONE
                 order_num.text=it.data.orderNo
                 order_time.text=switchCreateTime(it.data.createTime)
                 if(it.data.targetDate!=null) have_date.text=switchCreateTime2(it.data.targetDate)
                 have_cate.text=it.data.mealTime
-
                 if(it.data.mealTimeStart!=null&&it.data.mealTimeEnd!=null)
                     have_time.text=switchCreateTime3(it.data.mealTimeStart)+" — "+switchCreateTime3(it.data.mealTimeEnd)
-                when(it.data.mealType){
-                    1 -> meal_style.text="堂食"
-                    2 -> meal_style.text="自提"
-                    else -> meal_style.text="外卖"
-                }
+//                when(it.data.mealType){
+//                    1 -> meal_style.text="堂食"
+//                    2 -> meal_style.text="自提"
+//                    else -> meal_style.text="外卖"
+//                }
                 if(it.data.status==10){
                     revoke_time.text=switchCreateTime(it.data.updateTime)
                     revoke_btn.text="已核销"
@@ -475,7 +471,6 @@ class OrderActivity : BaseActivity(){
                     revoke_btn.isEnabled=false
                     revoke_time.visibility= View.VISIBLE
                     revoke.visibility=View.VISIBLE
-
                 }else{
                     revoke_btn.text="核销"
                     revoke_btn.setBackgroundResource(R.drawable.order_revoke_btn)
@@ -485,7 +480,7 @@ class OrderActivity : BaseActivity(){
                             if(it.code==200){
                                 Log.d("${orderNo}订单状态更新",it.toString())
                                 //getOrderUser(pos,mealtime,pos2)
-                                RQ.getOrderList(this,pos,mealtime,pos2){
+                                RQ.getOrderList(this,mealtime,pos2){
                                     orderlist_RV(it.data)
                                 }
                                 revoke_btn.text="已核销"

@@ -53,17 +53,17 @@
                     android:textSize="18sp"
                     android:text="1003"/>
 
-                <Button
-                    android:id="@+id/item_order_type_btn"
-                    android:layout_width="40dp"
-                    android:layout_height="40dp"
-                    android:background="@drawable/order_type_btn"
-                    android:layout_gravity="center"
-                    android:gravity="center"
-                    android:layout_centerInParent="true"
-                    android:enabled="false"
-                    android:text="自提"
-                    android:textColor="@color/white" />
+<!--                <Button-->
+<!--                    android:id="@+id/item_order_type_btn"-->
+<!--                    android:layout_width="40dp"-->
+<!--                    android:layout_height="40dp"-->
+<!--                    android:background="@drawable/order_type_btn"-->
+<!--                    android:layout_gravity="center"-->
+<!--                    android:gravity="center"-->
+<!--                    android:layout_centerInParent="true"-->
+<!--                    android:enabled="false"-->
+<!--                    android:text="自提"-->
+<!--                    android:textColor="@color/white" />-->
 
                 <TextView
                     android:id="@+id/item_order_cancle"
