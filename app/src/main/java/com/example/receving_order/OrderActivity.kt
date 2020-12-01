@@ -387,8 +387,13 @@ class OrderActivity : BaseActivity(){
                     }
                     h.tv(R.id.item_order_user).text=user[p].customerName
                     h.tv(R.id.item_order_time).text=switchCreateTime(user[p].createTime)
-                    h.tv(R.id.item_order_user_num_txt).text="座位号:"
-                    h.tv(R.id.item_order_user_num).text=user[p].seatNumber
+                    if(user[p].reserveType==1){
+                        h.tv(R.id.item_order_user_num_txt).text="座位号:"
+                        h.tv(R.id.item_order_user_num).text=user[p].seatNumber
+                    }else if(user[p].reserveType==2){
+                        h.tv(R.id.item_order_user_num_txt).text="取餐号:"
+                        h.tv(R.id.item_order_user_num).text=user[p].mealTakingNum
+                    }
 //                    h.tv(R.id.item_order_type_btn).text="堂食"
                     if(user[p].status==10||user[p].status==11){
                         h.tv(R.id.item_order_cancle).tag=1
@@ -437,21 +442,18 @@ class OrderActivity : BaseActivity(){
         RQ.getOrderDetail(this,orderNo){
             Log.d("it.data<<<<<",it.data.toString())
             if(it.code==200){
-//                if(it.data.mealType==2){
-//                    Log.d("取餐号===",it.data.mealTakingNum)
-//                    meal_num_txt.text="取餐号："
-//                    meal_num.text=it.data.mealTakingNum
-//                    packLin.visibility=View.VISIBLE
-//                    order_pack.text="￥"+fenToYuan(it.data.packFee.toString())
-//                }else if (it.data.mealType==1){
-//                    Log.d("座位号===",it.data.seatNumber)
-//                    meal_num_txt.text="座位号："
-//                    meal_num.text=it.data.seatNumber
-//                    packLin.visibility=View.GONE
-//                }
-                Log.d("座位号===",it.data.seatNumber)
-                meal_num_txt.text="座位号："
-                meal_num.text=it.data.seatNumber
+                if(it.data.mealType==2){
+                    Log.d("取餐号===",it.data.mealTakingNum)
+                    meal_num_txt.text="取餐号："
+                    meal_num.text=it.data.mealTakingNum
+                    packLin.visibility=View.VISIBLE
+                    order_pack.text="￥"+fenToYuan(it.data.packFee.toString())
+                }else if (it.data.mealType==1){
+                    Log.d("座位号===",it.data.seatNumber)
+                    meal_num_txt.text="座位号："
+                    meal_num.text=it.data.seatNumber
+                    packLin.visibility=View.GONE
+                }
                 packLin.visibility=View.GONE
                 order_num.text=it.data.orderNo
                 order_time.text=switchCreateTime(it.data.createTime)
@@ -563,7 +565,7 @@ class OrderActivity : BaseActivity(){
 
     fun switchCreateTime3(createTime: String?): String? {
         var formatStr2: String? = null
-        val format = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss") //注意格式化的表达式
+        val format = SimpleDateFormat("HH:mm:ss") //注意格式化的表达式
         try {
             val time = format.parse(createTime)
             val date = time.toString()
