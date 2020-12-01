@@ -48,6 +48,9 @@ class LoginActivity :BaseActivity() {
     private fun click(){
 
         login_eye.click {
+
+
+
             if(login_eye.tag==1){
                 login_eye.setImageResource(R.drawable.seeing)
                 login_password_edit.setTransformationMethod(PasswordTransformationMethod.getInstance())

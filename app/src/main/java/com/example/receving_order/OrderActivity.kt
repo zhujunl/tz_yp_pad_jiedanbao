@@ -121,26 +121,31 @@ class OrderActivity : BaseActivity(){
 
         search_txt.click {
             RQ.getOrderList(this,search_edt.text.toString().trim(),pos,mealtime,pos2){
-                if(it.data.size>0) {
-                    getOrderMeal(it.data[0].orderNo)
-                }
-                var user:MutableList<order_list.Data> = ArrayList()
-                it.data.forEach {user.add(it) }
-                order_user_list.clear()
-                if(user.size==0) {
-                    order_right.visibility = View.INVISIBLE
-                    order_list_refresh.visibility=View.INVISIBLE
-                    nonono.visibility=View.VISIBLE
+                if(it.code==200){
+                    if(it.data.size>0) {
+                        getOrderMeal(it.data[0].orderNo)
+                    }
+                    var user:MutableList<order_list.Data> = ArrayList()
+                    it.data.forEach {user.add(it) }
+                    order_user_list.clear()
+                    if(user.size==0) {
+                        order_right.visibility = View.INVISIBLE
+                        order_list_refresh.visibility=View.INVISIBLE
+                        nonono.visibility=View.VISIBLE
+                    }else{
+                        order_right.visibility = View.VISIBLE
+                        order_list_refresh.visibility=View.VISIBLE
+                        nonono.visibility=View.GONE
+                        last_OrderNO=user[user.size-1].orderNo
+                        order_user_list=user
+                    }
+                    Log.d("sear_order_user_list.size_last===",order_user_list.size.toString())
+                    Log.d("sear_last_OrderNO===",last_OrderNO)
+                    orderlist_RV(user)
                 }else{
-                    order_right.visibility = View.VISIBLE
-                    order_list_refresh.visibility=View.VISIBLE
-                    nonono.visibility=View.GONE
-                    last_OrderNO=user[user.size-1].orderNo
-                    order_user_list=user
+                    ToastUtils().toast(this,it.message)
                 }
-                Log.d("sear_order_user_list.size_last===",order_user_list.size.toString())
-                Log.d("sear_last_OrderNO===",last_OrderNO)
-                orderlist_RV(user)
+
             }
         }
 
@@ -319,14 +324,15 @@ class OrderActivity : BaseActivity(){
         System.out.println("pos=="+pos+"meal=="+mealtime+"pos2=="+pos2)
         var user:MutableList<order_list.Data> = ArrayList()
         RQ.getOrderList(this,pos,mealtime,pos2){
-            Log.d("it.data====",it.data.toString())
-            it.data.forEach {
-                Log.d("it====",it.toString())
-                user.add(it)
-            }
-            Log.d("user===",user.toString())
-            if(user.size>0) {
-                getOrderMeal(user.get(0).orderNo)
+            if(it.code==200){
+                Log.d("it.data====",it.data.toString())
+                it.data.forEach {
+                    Log.d("it====",it.toString())
+                    user.add(it)
+                }
+                Log.d("user===",user.toString())
+                if(user.size>0) {
+                    getOrderMeal(user.get(0).orderNo)
 
 //                Thread(Runnable {
 //                    val msg: Message = Message.obtain()
@@ -334,28 +340,29 @@ class OrderActivity : BaseActivity(){
 //                    msg.obj = user.get(0).orderNo
 //                    mHandler.sendMessage(msg)
 //                }).start()
-                val msg: Message = Message.obtain()
-                msg.what = 1
-                msg.obj = user.get(0).orderNo
-                mHandler.sendMessage(msg)
+                    val msg: Message = Message.obtain()
+                    msg.what = 1
+                    msg.obj = user.get(0).orderNo
+                    mHandler.sendMessage(msg)
 
-                last_OrderNO=user[user.size-1].orderNo
-                order_user_list=user
-            }
-            RQ.getorderNum(this,pos,mealtime,pos2){
-                count=it.data
-                Log.d("获得订单用户信息count===",count.toString())
-                orderlist_RV(user)
-            }
+                    last_OrderNO=user[user.size-1].orderNo
+                    order_user_list=user
+                }
+                RQ.getorderNum(this,pos,mealtime,pos2){
+                    count=it.data
+                    Log.d("获得订单用户信息count===",count.toString())
+                    orderlist_RV(user)
+                }
 
-            if(user.size==0) {
-                order_right.visibility = View.INVISIBLE
-                nonono.visibility=View.VISIBLE
-            }else{
-                order_right.visibility = View.VISIBLE
-                nonono.visibility=View.GONE
+                if(user.size==0) {
+                    order_right.visibility = View.INVISIBLE
+                    nonono.visibility=View.VISIBLE
+                }else{
+                    order_right.visibility = View.VISIBLE
+                    nonono.visibility=View.GONE
 
 
+                }
             }
         }
     }
@@ -436,83 +443,88 @@ class OrderActivity : BaseActivity(){
 
         RQ.getOrderDetail(this,orderNo){
             Log.d("it.data<<<<<",it.data.toString())
-            if(it.data.mealType==2){
-                Log.d("取餐号===",it.data.mealTakingNum)
-                meal_num_txt.text="取餐号："
-                meal_num.text=it.data.mealTakingNum
-                packLin.visibility=View.VISIBLE
-                order_pack.text="￥"+fenToYuan(it.data.packFee.toString())
-            }else if (it.data.mealType==1){
-                Log.d("座位号===",it.data.seatNumber)
-                meal_num_txt.text="座位号："
-                meal_num.text=it.data.seatNumber
-                packLin.visibility=View.GONE
-            }
-            order_num.text=it.data.orderNo
-            order_time.text=switchCreateTime(it.data.createTime)
-            if(it.data.targetDate!=null) have_date.text=switchCreateTime2(it.data.targetDate)
-            have_cate.text=it.data.mealTime
-            have_time.text=switchCreateTime3(it.data.mealTimeStart)+" — "+switchCreateTime3(it.data.mealTimeEnd)
-            when(it.data.mealType){
-                1 -> meal_style.text="堂食"
-                2 -> meal_style.text="自提"
-                else -> meal_style.text="外卖"
-            }
-            if(it.data.status==10){
-                revoke_time.text=switchCreateTime(it.data.updateTime)
-                revoke_btn.text="已核销"
-                revoke_btn.setBackgroundResource(R.drawable.order_revoked_btn)
-                revoke_btn.isEnabled=false
-                revoke_time.visibility= View.VISIBLE
-                revoke.visibility=View.VISIBLE
+            if(it.code==200){
+                if(it.data.mealType==2){
+                    Log.d("取餐号===",it.data.mealTakingNum)
+                    meal_num_txt.text="取餐号："
+                    meal_num.text=it.data.mealTakingNum
+                    packLin.visibility=View.VISIBLE
+                    order_pack.text="￥"+fenToYuan(it.data.packFee.toString())
+                }else if (it.data.mealType==1){
+                    Log.d("座位号===",it.data.seatNumber)
+                    meal_num_txt.text="座位号："
+                    meal_num.text=it.data.seatNumber
+                    packLin.visibility=View.GONE
+                }
+                order_num.text=it.data.orderNo
+                order_time.text=switchCreateTime(it.data.createTime)
+                if(it.data.targetDate!=null) have_date.text=switchCreateTime2(it.data.targetDate)
+                have_cate.text=it.data.mealTime
 
-            }else{
-                revoke_btn.text="核销"
-                revoke_btn.setBackgroundResource(R.drawable.order_revoke_btn)
-                revoke_btn.isEnabled=true
-                revoke_btn.click {
-                    RQ.updataOrder(this,10,orderNo){
-                        if(it.code==200){
-                            Log.d("${orderNo}订单状态更新",it.toString())
-                            //getOrderUser(pos,mealtime,pos2)
-                            RQ.getOrderList(this,pos,mealtime,pos2){
-                                orderlist_RV(it.data)
+                if(it.data.mealTimeStart!=null&&it.data.mealTimeEnd!=null)
+                    have_time.text=switchCreateTime3(it.data.mealTimeStart)+" — "+switchCreateTime3(it.data.mealTimeEnd)
+                when(it.data.mealType){
+                    1 -> meal_style.text="堂食"
+                    2 -> meal_style.text="自提"
+                    else -> meal_style.text="外卖"
+                }
+                if(it.data.status==10){
+                    revoke_time.text=switchCreateTime(it.data.updateTime)
+                    revoke_btn.text="已核销"
+                    revoke_btn.setBackgroundResource(R.drawable.order_revoked_btn)
+                    revoke_btn.isEnabled=false
+                    revoke_time.visibility= View.VISIBLE
+                    revoke.visibility=View.VISIBLE
+
+                }else{
+                    revoke_btn.text="核销"
+                    revoke_btn.setBackgroundResource(R.drawable.order_revoke_btn)
+                    revoke_btn.isEnabled=true
+                    revoke_btn.click {
+                        RQ.updataOrder(this,10,orderNo){
+                            if(it.code==200){
+                                Log.d("${orderNo}订单状态更新",it.toString())
+                                //getOrderUser(pos,mealtime,pos2)
+                                RQ.getOrderList(this,pos,mealtime,pos2){
+                                    orderlist_RV(it.data)
+                                }
+                                revoke_btn.text="已核销"
+                                revoke_btn.setBackgroundResource(R.drawable.order_revoked_btn)
+                                revoke_btn.isEnabled=false
+                                revoke_time.visibility= View.VISIBLE
+                                revoke.visibility=View.VISIBLE
+                            }else{
+                                ToastUtils().toast(this,it.message,true,Gravity.CENTER,200)
                             }
-                            revoke_btn.text="已核销"
-                            revoke_btn.setBackgroundResource(R.drawable.order_revoked_btn)
-                            revoke_btn.isEnabled=false
-                            revoke_time.visibility= View.VISIBLE
-                            revoke.visibility=View.VISIBLE
-                        }else{
-                            ToastUtils().toast(this,it.message,true,Gravity.CENTER,200)
                         }
                     }
+
+                    revoke_time.visibility= View.GONE
+                    revoke.visibility=View.GONE
                 }
 
-                revoke_time.visibility= View.GONE
-                revoke.visibility=View.GONE
+
+                pay.text=it.data.payType
+                order_user.text=it.data.memberName
+                order_phone.text=it.data.phone
+                if(it.data.itemList==null){
+
+                }else{
+                    order_info_RV.wrap.rvMultiAdapter(it.data.itemList,{
+                        h,p->
+                        h.tv(R.id.item_order_name).text=it.data.itemList[p].name
+                        h.tv(R.id.item_order_num).text="X"+it.data.itemList[p].count
+                        h.tv(R.id.item_order_price).text="￥"+fenToYuan(it.data.itemList[p].fee.toString())
+                    },{
+                        0
+                    },R.layout.item_order_meal_info)
+                }
+
+                order_remarks.text=it.data.note
+                order_discount.text="￥"+fenToYuan(it.data.discount.toString())
+                order_total.text="￥"+fenToYuan(it.data.totalFee.toString())
             }
 
-
-            pay.text=it.data.payType
-            order_user.text=it.data.memberName
-            order_phone.text=it.data.phone
-            if(it.data.itemList==null){
-
-            }else{
-                order_info_RV.wrap.rvMultiAdapter(it.data.itemList,{
-                    h,p->
-                    h.tv(R.id.item_order_name).text=it.data.itemList[p].name
-                    h.tv(R.id.item_order_num).text="X"+it.data.itemList[p].count
-                    h.tv(R.id.item_order_price).text="￥"+fenToYuan(it.data.itemList[p].fee.toString())
-                },{
-                    0
-                },R.layout.item_order_meal_info)
-            }
-
-            order_remarks.text=it.data.note
-            order_discount.text="￥"+fenToYuan(it.data.discount.toString())
-            order_total.text="￥"+fenToYuan(it.data.totalFee.toString())
         }
     }
 
