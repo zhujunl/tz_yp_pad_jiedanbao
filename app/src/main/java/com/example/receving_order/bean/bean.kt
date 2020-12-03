@@ -80,4 +80,9 @@ data class getMeal(val code: Int,val message: String,val `data`:Data){
     )
 }
 
-data class getCount(val code :Int,val message: String,val data:Int)
+data class getCount(val code :Int,val message: String,val data:Data){
+    data class Data(
+        val len:Int,
+        val cancelList:List<String>
+    )
+}

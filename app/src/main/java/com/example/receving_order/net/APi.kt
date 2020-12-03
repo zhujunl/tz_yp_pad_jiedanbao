@@ -4,6 +4,7 @@ object APi {
      var BASE_HTTP="https://tzapi.yunpengai.com"
     var BASE_HTTP2="https://tzapi.yunpengai.com"
     var Base="https://tzapi.yunpengai.com"
+    var CESHI="http://192.168.10.48:9096"
 
 
     val ORDER_LIST="$BASE_HTTP/api/wxapp/tz/pad/order/list"

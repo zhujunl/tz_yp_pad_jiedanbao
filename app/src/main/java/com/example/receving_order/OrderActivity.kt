@@ -9,6 +9,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.os.Message
+import android.support.v4.view.MotionEventCompat
 import android.util.Log
 import android.view.Gravity
 import android.view.MotionEvent
@@ -17,11 +18,9 @@ import android.view.inputmethod.InputMethodManager
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.EditText
-import com.example.receving_order.bean.order_detail
 import com.example.receving_order.bean.order_list
 import com.example.receving_order.net.RQ
 import com.example.receving_order.net.SP
-import com.scwang.smartrefresh.layout.listener.OnLoadMoreListener
 import com.yp.baselib.annotation.FullScreen
 import com.yp.baselib.annotation.LayoutId
 import com.yp.baselib.annotation.Orientation
@@ -33,6 +32,7 @@ import java.text.NumberFormat
 import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
+import kotlin.collections.ArrayList
 
 
 @LayoutId(R.layout.activity_order)
@@ -46,10 +46,13 @@ class OrderActivity : BaseActivity(){
     private var count=0
     private var mealtime : String = ""
     private var mstyle= arrayListOf<String>("全部")
-    private var order_user_list:MutableList<order_list.Data> = ArrayList()
+    private var order_user_list:MutableList<order_list.Data> = ArrayList()//发生改变用于的列表
+    private var cancel_list:MutableList<String> = ArrayList()
+    private var count_list:MutableList<order_list.Data> = ArrayList()//不发生改变用于对比长度的列表
     private var last_OrderNO= String()
 //    private val mItems = arrayOf("全部", "堂食", "自提")
     private val mrovke= arrayOf("全部","未核销","已核销")
+    var scrollflag=false
 
 
     private val handler: Handler = object : Handler() {
@@ -79,10 +82,32 @@ class OrderActivity : BaseActivity(){
             mHandler.postDelayed(this, 5000)
         }
     }
+    var r2:Runnable=object :Runnable{
+        override fun run() {
+            if(scrollflag==true){
+                auto_cancel(mealtime,pos2)
+            }
+            mHandler.postDelayed(this, 10000)
+        }
+    }
+    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
+        if (ev.action == MotionEvent.ACTION_DOWN) {
+            scrollflag=false
+            pendingCollapseKeyword = isShouldHideInput(ev)
+            if (pendingCollapseKeyword) focusedView = currentFocus
+        } else if (ev.action == MotionEvent.ACTION_UP) {
+            scrollflag=true
+            if (pendingCollapseKeyword) {
+                hideInputMethod(this)
+            }
+        }
+        return super.dispatchTouchEvent(ev)
+    }
+
 
     override fun init(bundle: Bundle?) {
         mHandler.postDelayed(r, 10000);//延时100毫秒
-
+        mHandler.postDelayed(r2,5000)
 //        val adapter= ArrayAdapter<String>(this, R.layout.item_order_spinner, mItems)
 //        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
 //        order_spinner.setAdapter(adapter)
@@ -127,6 +152,7 @@ class OrderActivity : BaseActivity(){
                     var user:MutableList<order_list.Data> = ArrayList()
                     it.data.forEach {user.add(it) }
                     order_user_list.clear()
+                    count_list.clear()
                     if(user.size==0) {
                         order_right.visibility = View.INVISIBLE
                         order_list_refresh.visibility=View.INVISIBLE
@@ -137,10 +163,11 @@ class OrderActivity : BaseActivity(){
                         nonono.visibility=View.GONE
                         last_OrderNO=user[user.size-1].orderNo
                         order_user_list=user
+                        count_list=user
                     }
                     Log.d("sear_order_user_list.size_last===",order_user_list.size.toString())
                     Log.d("sear_last_OrderNO===",last_OrderNO)
-                    orderlist_RV(user)
+                    orderlist_RV(user,true)
                 }else{
                     ToastUtils().toast(this,it.message)
                 }
@@ -193,6 +220,7 @@ class OrderActivity : BaseActivity(){
                 search_edt.text.clear()
                 getOrderUser(mealtime,pos2)
                 order_user_list.clear()
+                count_list.clear()
             }
         })
 
@@ -237,12 +265,14 @@ class OrderActivity : BaseActivity(){
 
     }
     var mediaPlayer: MediaPlayer? = null
-
+    /**
+     * 根据长度判断是否有新订单
+     */
     fun auto_refresh(mealtime:String,pos2:String){
         RQ.getorderNum(this,mealtime,pos2){
             Log.d("长度==",count.toString())
-            if(count<it.data){
-                count=it.data
+            if(count<it.data.len){
+                count=it.data.len
                 if (mediaPlayer == null) {
                     mediaPlayer = MediaPlayer()
                     mediaPlayer!!.setOnPreparedListener { mp -> mp.start() }
@@ -261,16 +291,53 @@ class OrderActivity : BaseActivity(){
                 RQ.refrestOrderList(this,search_edt.text.toString().trim(),mealtime, pos2, last_OrderNO) {
                     Log.d("search_edt.text.toString().trim()==",search_edt.text.toString().trim())
                     it.data.forEach { order_user_list.add(it) }
-                    orderlist_RV(order_user_list)
+                    orderlist_RV(order_user_list,false)
                     order_list.scrollToPosition(order_user_list.size-1)
                 }
-            }else if (count>it.data){
-                count=it.data
+            }else if (count>it.data.len){
+                count=it.data.len
             }
             Log.d("刷新count====",count.toString())
+
         }
     }
 
+    /**
+     * 获取取消的订单号列表
+     */
+    fun auto_cancel(mealtime:String,pos2:String){
+        cancel_list.clear()
+        RQ.getorderNum(this,mealtime,pos2){
+            if(it.data.cancelList.size>0){
+                for (i in 0 until it.data.cancelList.size){
+                    cancel_list.add(it.data.cancelList[i])
+                }
+                if (order_user_list.size!=0){
+                    last_OrderNO=order_user_list[order_user_list.size-1].orderNo
+                }
+                Log.d("取消_last_OrderNO===",last_OrderNO)
+                RQ.refrestOrderList(this,search_edt.text.toString().trim(),mealtime, pos2, last_OrderNO) {
+                    it.data.forEach { order_user_list.add(it) }
+                    it.data.forEach { count_list.add(it) }
+                    Log.d("取消中order_user_list=======",order_user_list.size.toString())
+                    for (i in cancel_list){
+                        for (li in 0 until order_user_list.size){
+                            if(li<order_user_list.size){
+                                if(i.equals(order_user_list[li].orderNo)){
+                                    order_user_list.remove(order_user_list[li])
+                                }
+                            }
+                        }
+                    }
+                    Log.d("count中取消的长度===",order_user_list.size.toString())
+                    orderlist_RV(order_user_list,false)
+                    if (currentSelectIndex>2){
+                        order_list.scrollToPosition(currentSelectIndex-2)
+                    }
+                }
+            }
+        }
+    }
     fun mealTime(){
         var p : Int=0
         val style_adapter2=ArrayAdapter<String>(this,R.layout.item_orderstyle_spinner,mstyle)
@@ -304,6 +371,7 @@ class OrderActivity : BaseActivity(){
                             getOrderUser(mealtime,pos2)
                             search_edt.text.clear()
                             order_user_list.clear()
+                            count_list.clear()
                         }
                         override fun onNothingSelected(parent: AdapterView<*>?) {
                             TODO("Not yet implemented")
@@ -346,11 +414,12 @@ class OrderActivity : BaseActivity(){
 
                     last_OrderNO=user[user.size-1].orderNo
                     order_user_list=user
+                    count_list=user
                 }
                 RQ.getorderNum(this,mealtime,pos2){
-                    count=it.data
+                    count=it.data.len
                     Log.d("获得订单用户信息count===",count.toString())
-                    orderlist_RV(user)
+                    orderlist_RV(user,true)
                 }
 
                 if(user.size==0) {
@@ -365,11 +434,11 @@ class OrderActivity : BaseActivity(){
             }
         }
     }
-
-    fun orderlist_RV(user:List<order_list.Data>){
+    fun orderlist_RV(user:List<order_list.Data>,scroll:Boolean){
         item_pos=0
         var mealList:MutableList<String> = ArrayList()
         Log.d("orderlist_RV===",user.toString())
+        Log.d("orderlist_RV.size===",user.size.toString())
         Log.d("meal====",mealtime)
         order_list.wrap.rvMultiAdapter(
                 user,
@@ -430,7 +499,7 @@ class OrderActivity : BaseActivity(){
                 { p->if(p==currentSelectIndex) 1 else 0 },
                 R.layout.item_order_user_info,R.layout.item_order_user_info_checked
         )
-        order_list.scrollToPosition(currentSelectIndex)
+        if (scroll==true) {order_list.scrollToPosition(currentSelectIndex)}
     }
 
 
@@ -483,7 +552,7 @@ class OrderActivity : BaseActivity(){
                                 Log.d("${orderNo}订单状态更新",it.toString())
                                 //getOrderUser(pos,mealtime,pos2)
                                 RQ.getOrderList(this,mealtime,pos2){
-                                    orderlist_RV(it.data)
+                                    orderlist_RV(it.data,false)
                                 }
                                 revoke_btn.text="已核销"
                                 revoke_btn.setBackgroundResource(R.drawable.order_revoked_btn)
@@ -603,17 +672,7 @@ class OrderActivity : BaseActivity(){
     var focusedView: View? = null
 
     // 点击非输入框位置优先隐藏软键盘
-    override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
-        if (ev.action == MotionEvent.ACTION_DOWN) {
-            pendingCollapseKeyword = isShouldHideInput(ev)
-            if (pendingCollapseKeyword) focusedView = currentFocus
-        } else if (ev.action == MotionEvent.ACTION_UP) {
-            if (pendingCollapseKeyword) {
-                hideInputMethod(this)
-            }
-        }
-        return super.dispatchTouchEvent(ev)
-    }
+
 
     private fun isShouldHideInput(event: MotionEvent): Boolean {
         val v = currentFocus
