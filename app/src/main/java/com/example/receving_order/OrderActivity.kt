@@ -33,6 +33,7 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 import kotlin.collections.ArrayList
+import kotlin.math.log
 
 
 @LayoutId(R.layout.activity_order)
@@ -48,24 +49,24 @@ class OrderActivity : BaseActivity(){
     private var mstyle= arrayListOf<String>("全部")
     private var order_user_list:MutableList<order_list.Data> = ArrayList()//发生改变用于的列表
     private var cancel_list:MutableList<String> = ArrayList()
-    private var count_list:MutableList<order_list.Data> = ArrayList()//不发生改变用于对比长度的列表
+//    private var count_list:MutableList<order_list.Data> = ArrayList()//不发生改变用于对比长度的列表
     private var last_OrderNO= String()
 //    private val mItems = arrayOf("全部", "堂食", "自提")
     private val mrovke= arrayOf("全部","未核销","已核销")
     var scrollflag=false
 
 
-    private val handler: Handler = object : Handler() {
-        override fun handleMessage(msg: Message) {
-            super.handleMessage(msg)
-            when (msg.what) {
-                1 ->{
-                    Log.d("获取详情==",msg.obj as String)
-                    getOrderMeal(msg.obj as String)
-                }
-            }
-        }
-    }
+//    private val handler: Handler = object : Handler() {
+//        override fun handleMessage(msg: Message) {
+//            super.handleMessage(msg)
+//            when (msg.what) {
+//                1 ->{
+//                    Log.d("获取详情==",msg.obj as String)
+//                    getOrderMeal(msg.obj as String)
+//                }
+//            }
+//        }
+//    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         val intentFilter=IntentFilter()
@@ -79,7 +80,7 @@ class OrderActivity : BaseActivity(){
             //do something
             //每隔1s循环执行run方法
             auto_refresh(mealtime,pos2)
-            mHandler.postDelayed(this, 5000)
+            mHandler.postDelayed(this, 3000)
         }
     }
     var r2:Runnable=object :Runnable{
@@ -87,7 +88,7 @@ class OrderActivity : BaseActivity(){
             if(scrollflag==true){
                 auto_cancel(mealtime,pos2)
             }
-            mHandler.postDelayed(this, 10000)
+            mHandler.postDelayed(this, 3000)
         }
     }
     override fun dispatchTouchEvent(ev: MotionEvent): Boolean {
@@ -106,8 +107,8 @@ class OrderActivity : BaseActivity(){
 
 
     override fun init(bundle: Bundle?) {
-        mHandler.postDelayed(r, 10000);//延时100毫秒
-        mHandler.postDelayed(r2,5000)
+        mHandler.postDelayed(r, 3000);//延时100毫秒
+        mHandler.postDelayed(r2,3000)
 //        val adapter= ArrayAdapter<String>(this, R.layout.item_order_spinner, mItems)
 //        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
 //        order_spinner.setAdapter(adapter)
@@ -152,7 +153,7 @@ class OrderActivity : BaseActivity(){
                     var user:MutableList<order_list.Data> = ArrayList()
                     it.data.forEach {user.add(it) }
                     order_user_list.clear()
-                    count_list.clear()
+                    //count_list.clear()
                     if(user.size==0) {
                         order_right.visibility = View.INVISIBLE
                         order_list_refresh.visibility=View.INVISIBLE
@@ -162,8 +163,10 @@ class OrderActivity : BaseActivity(){
                         order_list_refresh.visibility=View.VISIBLE
                         nonono.visibility=View.GONE
                         last_OrderNO=user[user.size-1].orderNo
-                        order_user_list=user
-                        count_list=user
+                        user.forEach{
+                            if(it.status!=11)order_user_list.add(it)
+                        }
+                        //count_list=user
                     }
                     Log.d("sear_order_user_list.size_last===",order_user_list.size.toString())
                     Log.d("sear_last_OrderNO===",last_OrderNO)
@@ -220,7 +223,7 @@ class OrderActivity : BaseActivity(){
                 search_edt.text.clear()
                 getOrderUser(mealtime,pos2)
                 order_user_list.clear()
-                count_list.clear()
+                //count_list.clear()
             }
         })
 
@@ -270,7 +273,6 @@ class OrderActivity : BaseActivity(){
      */
     fun auto_refresh(mealtime:String,pos2:String){
         RQ.getorderNum(this,mealtime,pos2){
-            Log.d("长度==",count.toString())
             if(count<it.data.len){
                 count=it.data.len
                 if (mediaPlayer == null) {
@@ -287,10 +289,14 @@ class OrderActivity : BaseActivity(){
                 if (order_user_list.size!=0){
                     last_OrderNO=order_user_list[order_user_list.size-1].orderNo
                 }
-                Log.d("_last_OrderNO===",last_OrderNO)
                 RQ.refrestOrderList(this,search_edt.text.toString().trim(),mealtime, pos2, last_OrderNO) {
-                    Log.d("search_edt.text.toString().trim()==",search_edt.text.toString().trim())
-                    it.data.forEach { order_user_list.add(it) }
+                    Log.d("新的订单===",it.data.toString())
+                    it.data.forEach { if(it.status!=11)order_user_list.add(it) }
+                    if(order_user_list.size>0){
+                        nonono.visibility=View.GONE
+                    }else{
+                        nonono.visibility=View.VISIBLE
+                    }
                     orderlist_RV(order_user_list,false)
                     order_list.scrollToPosition(order_user_list.size-1)
                 }
@@ -312,32 +318,46 @@ class OrderActivity : BaseActivity(){
                 for (i in 0 until it.data.cancelList.size){
                     cancel_list.add(it.data.cancelList[i])
                 }
-                if (order_user_list.size!=0){
-                    last_OrderNO=order_user_list[order_user_list.size-1].orderNo
-                }
-                Log.d("取消_last_OrderNO===",last_OrderNO)
-                RQ.refrestOrderList(this,search_edt.text.toString().trim(),mealtime, pos2, last_OrderNO) {
-                    it.data.forEach { order_user_list.add(it) }
-                    it.data.forEach { count_list.add(it) }
-                    Log.d("取消中order_user_list=======",order_user_list.size.toString())
-                    for (i in cancel_list){
+                for (i in cancel_list){
+                    if(order_user_list.size>0){
                         for (li in 0 until order_user_list.size){
                             if(li<order_user_list.size){
                                 if(i.equals(order_user_list[li].orderNo)){
                                     order_user_list.remove(order_user_list[li])
+                                    if(currentSelectIndex>0) {
+                                        nonono.visibility=View.GONE
+                                        order_right.visibility=View.VISIBLE
+                                        currentSelectIndex = currentSelectIndex - 1
+                                        getOrderMeal(order_user_list[currentSelectIndex].orderNo)
+                                    }else{
+                                        order_right.visibility=View.INVISIBLE
+                                    }
                                 }
                             }
                         }
                     }
-                    Log.d("count中取消的长度===",order_user_list.size.toString())
-                    orderlist_RV(order_user_list,false)
-                    if (currentSelectIndex>2){
-                        order_list.scrollToPosition(currentSelectIndex-2)
-                    }
+                }
+                Log.d("取消的currentSelectIndex===",currentSelectIndex.toString())
+                Log.d("count中取消的长度===",order_user_list.size.toString())
+                if (order_user_list.size>0){
+                    order_right.visibility=View.VISIBLE
+                    nonono.visibility=View.GONE
+                    getOrderMeal(order_user_list[currentSelectIndex].orderNo)
+                }else{
+                    nonono.visibility=View.VISIBLE
+                    order_right.visibility=View.INVISIBLE
+                }
+                orderlist_RV(order_user_list,false)
+                if (currentSelectIndex>2){
+                    order_list.scrollToPosition(currentSelectIndex-2)
                 }
             }
         }
     }
+
+    /**
+     * 餐段选择
+     */
     fun mealTime(){
         var p : Int=0
         val style_adapter2=ArrayAdapter<String>(this,R.layout.item_orderstyle_spinner,mstyle)
@@ -371,12 +391,11 @@ class OrderActivity : BaseActivity(){
                             getOrderUser(mealtime,pos2)
                             search_edt.text.clear()
                             order_user_list.clear()
-                            count_list.clear()
+                            //count_list.clear()
                         }
                         override fun onNothingSelected(parent: AdapterView<*>?) {
                             TODO("Not yet implemented")
                         }
-
                     })
                     order_style.setSelection(p,true)
                 }
@@ -388,38 +407,26 @@ class OrderActivity : BaseActivity(){
      * 获得订单用户信息
      */
     fun getOrderUser(mealtime:String,pos2:String){
-        System.out.println("meal=="+mealtime+"pos2=="+pos2)
         var user:MutableList<order_list.Data> = ArrayList()
         RQ.getOrderList(this,mealtime,pos2){
             if(it.code==200){
-                Log.d("it.data====",it.data.toString())
                 it.data.forEach {
-                    Log.d("it====",it.toString())
-                    user.add(it)
+                    if(it.status!=11){
+                        user.add(it)
+                    }
                 }
                 Log.d("user===",user.toString())
                 if(user.size>0) {
-                    getOrderMeal(user.get(0).orderNo)
-
-//                Thread(Runnable {
-//                    val msg: Message = Message.obtain()
-//                    msg.what = 1
-//                    msg.obj = user.get(0).orderNo
-//                    mHandler.sendMessage(msg)
-//                }).start()
-                    val msg: Message = Message.obtain()
-                    msg.what = 1
-                    msg.obj = user.get(0).orderNo
-                    mHandler.sendMessage(msg)
-
-                    last_OrderNO=user[user.size-1].orderNo
-                    order_user_list=user
-                    count_list=user
+                    user.forEach{
+                        if(it.status!=11) order_user_list.add(it)
+                    }
+                    getOrderMeal(order_user_list.get(0).orderNo)
+                    last_OrderNO=order_user_list[order_user_list.size-1].orderNo
+//                    count_list=user
                 }
                 RQ.getorderNum(this,mealtime,pos2){
                     count=it.data.len
-                    Log.d("获得订单用户信息count===",count.toString())
-                    orderlist_RV(user,true)
+                    orderlist_RV(order_user_list,true)
                 }
 
                 if(user.size==0) {
@@ -428,18 +435,18 @@ class OrderActivity : BaseActivity(){
                 }else{
                     order_right.visibility = View.VISIBLE
                     nonono.visibility=View.GONE
-
-
                 }
             }
         }
     }
+
+    /**
+     * 渲染订单列表
+     */
     fun orderlist_RV(user:List<order_list.Data>,scroll:Boolean){
         item_pos=0
         var mealList:MutableList<String> = ArrayList()
-        Log.d("orderlist_RV===",user.toString())
         Log.d("orderlist_RV.size===",user.size.toString())
-        Log.d("meal====",mealtime)
         order_list.wrap.rvMultiAdapter(
                 user,
                 {h,p->
@@ -464,7 +471,7 @@ class OrderActivity : BaseActivity(){
                         h.tv(R.id.item_order_user_num).text=user[p].mealTakingNum
                     }
 //                    h.tv(R.id.item_order_type_btn).text="堂食"
-                    if(user[p].status==10||user[p].status==11){
+                    if(user[p].status==10){
                         h.tv(R.id.item_order_cancle).tag=1
                         h.tv(R.id.item_order_cancle).text="已核销"
                         h.tv(R.id.item_order_cancle).setTextColor(resources.getColor(R.color.cancled))
@@ -474,15 +481,15 @@ class OrderActivity : BaseActivity(){
                         h.tv(R.id.item_order_cancle).setTextColor(resources.getColor(R.color.red))
                     }
                     h.tv(R.id.item_user).click {
+
                         currentSelectIndex=p
                         item_pos=p
                         Log.d("点击的orderNo===",user[p].orderNo)
                         getOrderMeal(user[p].orderNo)
-
-                        val msg: Message = Message.obtain()
-                        msg.what = 1
-                        msg.obj = user[p].orderNo
-                        mHandler.sendMessage(msg)
+//                        val msg: Message = Message.obtain()
+//                        msg.what = 1
+//                        msg.obj = user[p].orderNo
+//                        mHandler.sendMessage(msg)
 
                         order_list.update()
                         mealList.clear()
@@ -507,90 +514,93 @@ class OrderActivity : BaseActivity(){
      * 获得订单详情
      */
     private fun getOrderMeal(orderNo:String) {
-
         RQ.getOrderDetail(this,orderNo){
-            Log.d("it.data<<<<<",it.data.toString())
             if(it.code==200){
-                if(it.data.mealType==2){
-                    Log.d("取餐号===",it.data.mealTakingNum)
-                    meal_num_txt.text="取餐号："
-                    meal_num.text=it.data.mealTakingNum
-                    packLin.visibility=View.VISIBLE
-                    order_pack.text="￥"+fenToYuan(it.data.packFee.toString())
-                }else if (it.data.mealType==1){
-                    Log.d("座位号===",it.data.seatNumber)
-                    meal_num_txt.text="座位号："
-                    meal_num.text=it.data.seatNumber
+                if (it.data.status!=11){
+                    order_right.visibility=View.VISIBLE
+                    if(it.data.mealType==2){
+                        Log.d("取餐号===",it.data.mealTakingNum)
+                        meal_num_txt.text="取餐号："
+                        meal_num.text=it.data.mealTakingNum
+                        packLin.visibility=View.VISIBLE
+                        order_pack.text="￥"+fenToYuan(it.data.packFee.toString())
+                    }else if (it.data.mealType==1){
+                        Log.d("座位号===",it.data.seatNumber)
+                        meal_num_txt.text="座位号："
+                        meal_num.text=it.data.seatNumber
+                        packLin.visibility=View.GONE
+                    }
                     packLin.visibility=View.GONE
-                }
-                packLin.visibility=View.GONE
-                order_num.text=it.data.orderNo
-                order_time.text=switchCreateTime(it.data.createTime)
-                if(it.data.targetDate!=null) have_date.text=switchCreateTime2(it.data.targetDate)
-                have_cate.text=it.data.mealTime
-                if(it.data.mealTimeStart!=null&&it.data.mealTimeEnd!=null)
-                    have_time.text=switchCreateTime3(it.data.mealTimeStart)+" — "+switchCreateTime3(it.data.mealTimeEnd)
+                    order_num.text=it.data.orderNo
+                    order_time.text=switchCreateTime(it.data.createTime)
+                    if(it.data.targetDate!=null) have_date.text=switchCreateTime2(it.data.targetDate)
+                    have_cate.text=it.data.mealTime
+                    if(it.data.mealTimeStart!=null&&it.data.mealTimeEnd!=null)
+                        have_time.text=switchCreateTime3(it.data.mealTimeStart)+" — "+switchCreateTime3(it.data.mealTimeEnd)
 //                when(it.data.mealType){
 //                    1 -> meal_style.text="堂食"
 //                    2 -> meal_style.text="自提"
 //                    else -> meal_style.text="外卖"
 //                }
-                if(it.data.status==10){
-                    revoke_time.text=switchCreateTime(it.data.updateTime)
-                    revoke_btn.text="已核销"
-                    revoke_btn.setBackgroundResource(R.drawable.order_revoked_btn)
-                    revoke_btn.isEnabled=false
-                    revoke_time.visibility= View.VISIBLE
-                    revoke.visibility=View.VISIBLE
-                }else{
-                    revoke_btn.text="核销"
-                    revoke_btn.setBackgroundResource(R.drawable.order_revoke_btn)
-                    revoke_btn.isEnabled=true
-                    revoke_btn.click {
-                        RQ.updataOrder(this,10,orderNo){
-                            if(it.code==200){
-                                Log.d("${orderNo}订单状态更新",it.toString())
-                                //getOrderUser(pos,mealtime,pos2)
-                                RQ.getOrderList(this,mealtime,pos2){
-                                    orderlist_RV(it.data,false)
+                    if(it.data.status==10){
+                        revoke_time.text=switchCreateTime(it.data.updateTime)
+                        revoke_btn.text="已核销"
+                        revoke_btn.setBackgroundResource(R.drawable.order_revoked_btn)
+                        revoke_btn.isEnabled=false
+                        revoke_time.visibility= View.VISIBLE
+                        revoke.visibility=View.VISIBLE
+                    }else{
+                        revoke_btn.text="核销"
+                        revoke_btn.setBackgroundResource(R.drawable.order_revoke_btn)
+                        revoke_btn.isEnabled=true
+                        revoke_btn.click {
+                            RQ.updataOrder(this,10,orderNo){
+                                if(it.code==200){
+                                    //getOrderUser(pos,mealtime,pos2)
+                                    RQ.getOrderList(this,mealtime,pos2){
+                                        orderlist_RV(it.data,false)
+                                    }
+                                    revoke_btn.text="已核销"
+                                    revoke_btn.setBackgroundResource(R.drawable.order_revoked_btn)
+                                    revoke_btn.isEnabled=false
+                                    revoke_time.visibility= View.VISIBLE
+                                    revoke.visibility=View.VISIBLE
+                                }else{
+                                    ToastUtils().toast(this,it.message,true,Gravity.CENTER,200)
                                 }
-                                revoke_btn.text="已核销"
-                                revoke_btn.setBackgroundResource(R.drawable.order_revoked_btn)
-                                revoke_btn.isEnabled=false
-                                revoke_time.visibility= View.VISIBLE
-                                revoke.visibility=View.VISIBLE
-                            }else{
-                                ToastUtils().toast(this,it.message,true,Gravity.CENTER,200)
                             }
                         }
+
+                        revoke_time.visibility= View.GONE
+                        revoke.visibility=View.GONE
                     }
 
-                    revoke_time.visibility= View.GONE
-                    revoke.visibility=View.GONE
-                }
 
+                    pay.text=it.data.payType
+                    order_user.text=it.data.memberName
+                    order_phone.text=it.data.phone
+                    if(it.data.itemList==null){
 
-                pay.text=it.data.payType
-                order_user.text=it.data.memberName
-                order_phone.text=it.data.phone
-                if(it.data.itemList==null){
+                    }else{
+                        order_info_RV.wrap.rvMultiAdapter(it.data.itemList,{
+                                h,p->
+                            h.tv(R.id.item_order_name).text=it.data.itemList[p].name
+                            h.tv(R.id.item_order_num).text="X"+it.data.itemList[p].count
+                            h.tv(R.id.item_order_price).text="￥"+fenToYuan(it.data.itemList[p].fee.toString())
+                        },{
+                            0
+                        },R.layout.item_order_meal_info)
+                    }
+
+                    order_remarks.text=it.data.note
+                    order_discount.text="￥"+fenToYuan(it.data.discount.toString())
+                    order_total.text="￥"+fenToYuan(it.data.totalFee.toString())
 
                 }else{
-                    order_info_RV.wrap.rvMultiAdapter(it.data.itemList,{
-                        h,p->
-                        h.tv(R.id.item_order_name).text=it.data.itemList[p].name
-                        h.tv(R.id.item_order_num).text="X"+it.data.itemList[p].count
-                        h.tv(R.id.item_order_price).text="￥"+fenToYuan(it.data.itemList[p].fee.toString())
-                    },{
-                        0
-                    },R.layout.item_order_meal_info)
+                    order_right.visibility=View.INVISIBLE
                 }
 
-                order_remarks.text=it.data.note
-                order_discount.text="￥"+fenToYuan(it.data.discount.toString())
-                order_total.text="￥"+fenToYuan(it.data.totalFee.toString())
             }
-
         }
     }
 
